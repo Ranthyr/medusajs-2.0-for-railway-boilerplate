@@ -1,70 +1,80 @@
-import { Suspense } from "react"
+import SideMenu from "./side-menu";
+import { useEffect, useState } from "react";
+import { listCategories } from "@lib/data/categories";
 
-import { listRegions } from "@lib/data/regions"
-import { StoreRegion } from "@medusajs/types"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import CartButton from "@modules/layout/components/cart-button"
-import SideMenu from "@modules/layout/components/side-menu"
+export default function Nav() {
+  const [categories, setCategories] = useState([]);
 
-export default async function Nav() {
-  const regions = await listRegions().then((regions: StoreRegion[]) => regions)
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const data = await listCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Failed to fetch categories", error);
+      }
+    }
+    loadCategories();
+  }, []);
 
   return (
-    <div className="sticky top-0 inset-x-0 z-50 group">
-      <header className="relative h-16 mx-auto border-b duration-200 bg-white border-ui-border-base">
-        <nav className="content-container txt-xsmall-plus text-ui-fg-subtle flex items-center justify-between w-full h-full text-small-regular">
-          <div className="flex-1 basis-0 h-full flex items-center">
-            <div className="h-full">
-              <SideMenu regions={regions} />
-            </div>
-          </div>
+    <header className="bg-dark-gray text-gold sticky top-0 z-50">
+      <div className="flex items-center justify-between p-4">
+        {/* Logo */}
+        <a href="/" className="text-2xl font-bold">
+          Frisianumismatica
+        </a>
 
-          <div className="flex items-center h-full">
-            <LocalizedClientLink
-              href="/"
-              className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
-              data-testid="nav-store-link"
-            >
-              Medusa Store
-            </LocalizedClientLink>
-          </div>
+        {/* Zoekbalk (alleen desktop) */}
+        <form action="/search" method="GET" className="hidden md:block flex-grow mx-4 max-w-lg">
+          <input
+            type="text"
+            name="q"
+            placeholder="Zoeken..."
+            className="w-full px-3 py-2 border border-gold rounded-md bg-gray-800 text-gold"
+          />
+        </form>
 
-          <div className="flex items-center gap-x-6 h-full flex-1 basis-0 justify-end">
-            <div className="hidden small:flex items-center gap-x-6 h-full">
-              {process.env.NEXT_PUBLIC_FEATURE_SEARCH_ENABLED && (
-                <LocalizedClientLink
-                  className="hover:text-ui-fg-base"
-                  href="/search"
-                  scroll={false}
-                  data-testid="nav-search-link"
-                >
-                  Search
-                </LocalizedClientLink>
-              )}
-              <LocalizedClientLink
-                className="hover:text-ui-fg-base"
-                href="/account"
-                data-testid="nav-account-link"
+        {/* Account en Winkelmandje */}
+        <div className="flex items-center space-x-4">
+          <a href="/account" className="hover:underline">
+            Account
+          </a>
+          <a href="/cart" className="hover:underline">
+            Winkelmandje
+          </a>
+        </div>
+
+        {/* Hamburger menu (alleen mobiel) */}
+        <div className="block md:hidden">
+          <SideMenu />
+        </div>
+      </div>
+
+      {/* Navigatiebalk (alleen desktop) */}
+      <nav className="hidden md:block bg-gray-900 text-white">
+        <ul className="flex space-x-4 p-4">
+          {categories.map((category) => (
+            <li key={category.id} className="group relative">
+              <a
+                href={`/category/${category.handle}`}
+                className="hover:underline"
               >
-                Account
-              </LocalizedClientLink>
-            </div>
-            <Suspense
-              fallback={
-                <LocalizedClientLink
-                  className="hover:text-ui-fg-base flex gap-2"
-                  href="/cart"
-                  data-testid="nav-cart-link"
-                >
-                  Cart (0)
-                </LocalizedClientLink>
-              }
-            >
-              <CartButton />
-            </Suspense>
-          </div>
-        </nav>
-      </header>
-    </div>
-  )
+                {category.name}
+              </a>
+              {category.category_children?.length > 0 && (
+                <ul className="absolute left-0 mt-2 bg-white text-black shadow-lg hidden group-hover:block">
+                  {category.category_children.map((sub) => (
+                    <li key={sub.id} className="px-4 py-2 hover:bg-gray-200">
+                      <a href={`/category/${sub.handle}`}>{sub.name}</a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </header>
+  );
 }
