@@ -1,3 +1,5 @@
+"use client";
+
 import SideMenu from "./side-menu";
 import { useEffect, useState } from "react";
 import { listCategories } from "@lib/data/categories";
